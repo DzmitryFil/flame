@@ -43,7 +43,6 @@
 
 #[macro_use]
 extern crate lazy_static;
-extern crate thread_id;
 
 #[cfg(feature = "json")]
 #[macro_use]
@@ -64,7 +63,7 @@ use std::io::{Write, Error as IoError};
 
 pub type StrCow = Cow<'static, str>;
 
-lazy_static!(static ref ALL_THREADS: Mutex<Vec<(usize, Option<String>, PrivateFrame)>> = Mutex::new(Vec::new()););
+lazy_static!(static ref ALL_THREADS: Mutex<Vec<(u64, Option<String>, PrivateFrame)>> = Mutex::new(Vec::new()););
 thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
 #[derive(Debug)]
@@ -143,7 +142,7 @@ pub struct Note {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "json", derive(Serialize))]
 pub struct Thread {
-    pub id: usize,
+    pub id: u64,
     pub name: Option<String>,
     pub spans: Vec<Span>,
     #[cfg_attr(feature = "json", serde(skip_serializing))]
@@ -268,6 +267,15 @@ impl Library {
     }
 }
 
+#[inline]
+fn current_thread_id() -> u64 {
+    unsafe {
+        std::mem::transmute::<std::thread::ThreadId, u64>(
+            std::thread::current().id()
+        )
+    }
+}
+
 fn commit_impl(library: &mut Library) {
     use std::thread;
     use std::sync::MutexGuard;
@@ -286,7 +294,7 @@ fn commit_impl(library: &mut Library) {
 
     if let Ok(mut handle) = ALL_THREADS.lock() {
         let thread_name = library.name.clone();
-        let thread_id = ::thread_id::get();
+        let thread_id = current_thread_id();
         handle.push((thread_id, thread_name, frame))
     }
 }
@@ -476,7 +484,7 @@ pub fn threads() -> Vec<Thread> {
     if ::std::thread::panicking() { return vec![]; }
 
     let my_thread_name = ::std::thread::current().name().map(Into::into);
-    let my_thread_id = ::thread_id::get();
+    let my_thread_id = current_thread_id();
 
     let mut out = vec![ Thread {
         id: my_thread_id,
