@@ -1,33 +1,37 @@
 extern crate flame;
 
-#[test]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn implicit_guarded_event() {
     flame::clear();
-    flame::start_guard("foo");
+    let _ = flame::start_guard("foo");
 }
 
-#[test]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn named_guarded_event() {
     flame::clear();
     let _name = flame::start_guard("foo");
 }
 
-#[test]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn dropped_guarded_event() {
     flame::clear();
     let name = flame::start_guard("foo");
     name.end();
 }
 
-#[test]
-#[allow(unreachable_code)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn multiple_guard_early_return() {
     flame::clear();
     let _first = flame::start_guard("foo");
     let _second = flame::start_guard("bar");
 }
 
-#[test]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn single_event() {
     flame::clear();
     flame::start("event1");
@@ -38,7 +42,8 @@ fn single_event() {
     assert!(spans[0].name == "event1");
 }
 
-#[test]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn single_nested() {
     flame::clear();
     flame::start("event1");
@@ -57,7 +62,8 @@ fn single_nested() {
     assert!(first.children[0].depth == 1);
 }
 
-#[test]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn double_nested() {
     flame::clear();
     flame::start("event1");
