@@ -28,3 +28,7 @@ optional = true
 [dependencies.serde_json]
 version = "1.*.*"
 optional = true
+
+
+[dev-dependencies]
+wasm-bindgen-test = "0.2"
