@@ -52,13 +52,16 @@ extern crate serde;
 #[cfg(feature = "json")]
 extern crate serde_json;
 
+extern crate instant;
+
+use instant::{ Instant, now };
+
 mod html;
 
 use std::cell::{RefCell, Cell};
 use std::iter::Peekable;
 use std::borrow::Cow;
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
 use std::io::{Write, Error as IoError};
 
 pub type StrCow = Cow<'static, str>;

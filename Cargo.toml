@@ -14,6 +14,7 @@ default = ["json"]
 json = ["serde", "serde_derive", "serde_json"]
 
 [dependencies]
+instant = { version = "*", path = "../instant"}
 lazy_static = "1.*.*"
 
 [dependencies.serde]
