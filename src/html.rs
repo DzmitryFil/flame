@@ -1,6 +1,6 @@
-use std::io::Write;
+use super::Span;
 use std::io::Result as IoResult;
-use super::{Span};
+use std::io::Write;
 
 pub fn dump_html_custom<W: Write>(mut out: W, spans: &[Span]) -> IoResult<()> {
     fn dump_spans<W: Write>(out: &mut W, span: &Span) -> IoResult<()> {
@@ -19,7 +19,9 @@ pub fn dump_html_custom<W: Write>(mut out: W, spans: &[Span]) -> IoResult<()> {
         Ok(())
     }
 
-    write!(out, r#"
+    write!(
+        out,
+        r#"
 <!doctype html>
 <html>
     <head>
@@ -57,17 +59,25 @@ pub fn dump_html_custom<W: Write>(mut out: W, spans: &[Span]) -> IoResult<()> {
                     }}
                   }});
             d3.select("body").datum({{ children: [
-"#, include_str!("../resources/flameGraph.css"), include_str!("../resources/d3.js"), include_str!("../resources/d3-tip.js"), include_str!("../resources/flameGraph.js"))?;
+"#,
+        include_str!("../resources/flameGraph.css"),
+        include_str!("../resources/d3.js"),
+        include_str!("../resources/d3-tip.js"),
+        include_str!("../resources/flameGraph.js")
+    )?;
 
     for span in spans {
         dump_spans(&mut out, &span)?;
         writeln!(out, ",")?;
     }
 
-    write!(out, r#"]}}).call(flamegraph);
+    write!(
+        out,
+        r#"]}}).call(flamegraph);
          </script>
     </body>
-</html>"#)?;
+</html>"#
+    )?;
 
     Ok(())
 }

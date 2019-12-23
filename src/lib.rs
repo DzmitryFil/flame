@@ -40,7 +40,6 @@
 //! # fn cpu_heavy_operations_2() -> bool { true }
 //! ```
 
-
 #[macro_use]
 extern crate lazy_static;
 
@@ -54,19 +53,22 @@ extern crate serde_json;
 
 extern crate instant;
 
-use instant::{ Instant, now };
+use instant::{now, Instant};
 
 mod html;
 
-use std::cell::{RefCell, Cell};
-use std::iter::Peekable;
 use std::borrow::Cow;
+use std::cell::{Cell, RefCell};
+use std::io::{Error as IoError, Write};
+use std::iter::Peekable;
 use std::sync::Mutex;
-use std::io::{Write, Error as IoError};
 
 pub type StrCow = Cow<'static, str>;
 
-lazy_static!(static ref ALL_THREADS: Mutex<Vec<(u64, Option<String>, PrivateFrame)>> = Mutex::new(Vec::new()););
+lazy_static! {
+    static ref ALL_THREADS: Mutex<Vec<(u64, Option<String>, PrivateFrame)>> =
+        Mutex::new(Vec::new());
+}
 thread_local!(static LIBRARY: RefCell<Library> = RefCell::new(Library::new()));
 
 #[derive(Debug)]
@@ -161,14 +163,16 @@ pub struct SpanGuard {
 
 impl Drop for SpanGuard {
     fn drop(&mut self) {
-        if ::std::thread::panicking() { return; }
+        if ::std::thread::panicking() {
+            return;
+        }
         let name = self.name.take().unwrap();
         end_impl(name, self.collapse);
     }
 }
 
 impl SpanGuard {
-    pub fn end(self) { }
+    pub fn end(self) {}
     pub fn end_collapse(mut self) {
         self.collapse = true;
     }
@@ -180,7 +184,9 @@ fn ns_since_epoch(epoch: Instant) -> u64 {
 }
 
 fn convert_events_to_span<'a, I>(events: I) -> Vec<Span>
-where I: Iterator<Item = &'a Event> {
+where
+    I: Iterator<Item = &'a Event>,
+{
     let mut iterator = events.peekable();
     let mut v = vec![];
     while let Some(event) = iterator.next() {
@@ -191,7 +197,11 @@ where I: Iterator<Item = &'a Event> {
     v
 }
 
-fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut Peekable<I>, depth: u16) -> Option<Span> {
+fn event_to_span<'a, I: Iterator<Item = &'a Event>>(
+    event: &Event,
+    events: &mut Peekable<I>,
+    depth: u16,
+) -> Option<Span> {
     if event.end_ns.is_some() && event.delta.is_some() {
         let mut span = Span {
             name: event.name.clone(),
@@ -202,7 +212,7 @@ fn event_to_span<'a, I: Iterator<Item = &'a Event>>(event: &Event, events: &mut 
             children: vec![],
             notes: event.notes.clone(),
             collapsable: event.collapse,
-            _priv: ()
+            _priv: (),
         };
 
         loop {
@@ -272,18 +282,14 @@ impl Library {
 
 #[inline]
 fn current_thread_id() -> u64 {
-    unsafe {
-        std::mem::transmute::<std::thread::ThreadId, u64>(
-            std::thread::current().id()
-        )
-    }
+    unsafe { std::mem::transmute::<std::thread::ThreadId, u64>(std::thread::current().id()) }
 }
 
 fn commit_impl(library: &mut Library) {
-    use std::thread;
-    use std::sync::MutexGuard;
     use std::mem;
-    
+    use std::sync::MutexGuard;
+    use std::thread;
+
     let mut frame = PrivateFrame {
         all: vec![],
         id_stack: vec![],
@@ -308,7 +314,9 @@ pub fn commit_thread() {
 
 impl Drop for Library {
     fn drop(&mut self) {
-        if ::std::thread::panicking() { return; }
+        if ::std::thread::panicking() {
+            return;
+        }
         commit_impl(self);
     }
 }
@@ -320,14 +328,18 @@ impl Drop for Library {
 pub fn start_guard<S: Into<StrCow>>(name: S) -> SpanGuard {
     let name = name.into();
     start(name.clone());
-    SpanGuard { name: Some(name), collapse: false }
+    SpanGuard {
+        name: Some(name),
+        collapse: false,
+    }
 }
 
 /// Starts and ends a `Span` that lasts for the duration of the
 /// function `f`.
-pub fn span_of<S, F, R>(name: S, f: F) -> R where
-S: Into<StrCow>,
-F: FnOnce() -> R
+pub fn span_of<S, F, R>(name: S, f: F) -> R
+where
+    S: Into<StrCow>,
+    F: FnOnce() -> R,
 {
     let name = name.into();
     start(name.clone());
@@ -354,7 +366,7 @@ pub fn start<S: Into<StrCow>>(name: S) {
             start_ns: ns_since_epoch(epoch),
             end_ns: None,
             delta: None,
-            notes: vec![]
+            notes: vec![],
         };
 
         collector.all.push(this);
@@ -374,7 +386,10 @@ fn end_impl<S: Into<StrCow>>(name: S, collapse: bool) -> u64 {
         let current_id = match collector.id_stack.pop() {
             Some(id) => id,
             None if thread::panicking() => 0,
-            None => panic!("flame::end({:?}) called without a currently running span!", &name)
+            None => panic!(
+                "flame::end({:?}) called without a currently running span!",
+                &name
+            ),
         };
 
         let event = &mut collector.all[current_id as usize];
@@ -441,8 +456,10 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
 
         let current_id = match collector.id_stack.last() {
             Some(id) => *id,
-            None => panic!("flame::note({}, {:?}) called without a currently running span!",
-                           &name, &description)
+            None => panic!(
+                "flame::note({}, {:?}) called without a currently running span!",
+                &name, &description
+            ),
         };
 
         let event = &mut collector.all[current_id as usize];
@@ -450,7 +467,7 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
             name,
             description,
             instant: ns_since_epoch(epoch),
-            _priv: ()
+            _priv: (),
         });
     });
 }
@@ -458,7 +475,9 @@ pub fn note<S: Into<StrCow>>(name: S, description: Option<S>) {
 /// Clears all of the recorded info that Flame has
 /// tracked.
 pub fn clear() {
-    if ::std::thread::panicking() { return; }
+    if ::std::thread::panicking() {
+        return;
+    }
     LIBRARY.with(|library| {
         let mut library = library.borrow_mut();
         library.current = PrivateFrame {
@@ -475,7 +494,9 @@ pub fn clear() {
 
 /// Returns a list of spans from the current thread
 pub fn spans() -> Vec<Span> {
-    if ::std::thread::panicking() { return vec![]; }
+    if ::std::thread::panicking() {
+        return vec![];
+    }
     LIBRARY.with(|library| {
         let library = library.borrow();
         let cur = &library.current;
@@ -484,12 +505,14 @@ pub fn spans() -> Vec<Span> {
 }
 
 pub fn threads() -> Vec<Thread> {
-    if ::std::thread::panicking() { return vec![]; }
+    if ::std::thread::panicking() {
+        return vec![];
+    }
 
     let my_thread_name = ::std::thread::current().name().map(Into::into);
     let my_thread_id = current_thread_id();
 
-    let mut out = vec![ Thread {
+    let mut out = vec![Thread {
         id: my_thread_id,
         name: my_thread_name,
         spans: spans(),
@@ -512,16 +535,18 @@ pub fn threads() -> Vec<Thread> {
 
 /// Prints all of the frames to stdout.
 pub fn debug() {
-    if ::std::thread::panicking() { return; }
+    if ::std::thread::panicking() {
+        return;
+    }
     LIBRARY.with(|library| {
         println!("{:?}", library);
     });
 }
 
-pub fn dump_text_to_writer<W: Write>(mut out: W) -> Result<(), IoError>  {
+pub fn dump_text_to_writer<W: Write>(mut out: W) -> Result<(), IoError> {
     fn print_span<W: Write>(span: &Span, out: &mut W) -> Result<f32, IoError> {
         let mut buf = String::new();
-        for _ in 0 .. span.depth {
+        for _ in 0..span.depth {
             buf.push_str("  ");
         }
         buf.push_str("| ");
@@ -535,7 +560,7 @@ pub fn dump_text_to_writer<W: Write>(mut out: W) -> Result<(), IoError>  {
 
         if !span.children.is_empty() {
             let mut buf = String::new();
-            for _ in 0 ..= span.depth {
+            for _ in 0..=span.depth {
                 buf.push_str("  ");
             }
             buf.push_str("+ ");
@@ -562,7 +587,7 @@ pub fn dump_stdout() {
     dump_text_to_writer(stdout);
 }
 
-#[cfg(feature="json")]
+#[cfg(feature = "json")]
 pub fn dump_json<W: std::io::Write>(out: &mut W) -> std::io::Result<()> {
     out.write_all(serde_json::to_string_pretty(&threads()).unwrap().as_bytes())
 }

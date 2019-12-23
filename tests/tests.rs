@@ -51,8 +51,8 @@ fn single_event() {
 fn single_nested() {
     flame::clear();
     flame::start("event1");
-        flame::start("event2");
-        flame::end("event2");
+    flame::start("event2");
+    flame::end("event2");
     flame::end("event1");
 
     let spans = flame::spans();
@@ -71,10 +71,10 @@ fn single_nested() {
 fn double_nested() {
     flame::clear();
     flame::start("event1");
-        flame::start("event2");
-        flame::end("event2");
-        flame::start("event3");
-        flame::end("event3");
+    flame::start("event2");
+    flame::end("event2");
+    flame::start("event3");
+    flame::end("event3");
     flame::end("event1");
 
     let spans = flame::spans();
@@ -97,7 +97,7 @@ fn threads() {
     flame::start("main thread");
     let mut handles = vec![];
 
-    for i in 0 .. 10 {
+    for i in 0..10 {
         handles.push(spawn(move || {
             if i % 2 == 0 {
                 let s = format!("thread {}", i);
