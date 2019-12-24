@@ -280,9 +280,24 @@ impl Library {
     }
 }
 
+// impl Drop for Library {
+//     fn drop(&mut self) {
+//         if ::std::thread::panicking() {
+//             return;
+//         }
+//         commit_impl(self);
+//     }
+// }
+
 #[inline]
 fn current_thread_id() -> u64 {
-    unsafe { std::mem::transmute::<std::thread::ThreadId, u64>(std::thread::current().id()) }
+    unsafe {
+        // this will panic if called on thread exit because
+        // use of std::thread::current() is not
+        // possible after the thread's local
+        // data has been destroyed
+        std::mem::transmute::<std::thread::ThreadId, u64>(std::thread::current().id())
+    }
 }
 
 fn commit_impl(library: &mut Library) {
@@ -312,14 +327,6 @@ pub fn commit_thread() {
     LIBRARY.with(|library| commit_impl(&mut *library.borrow_mut()));
 }
 
-impl Drop for Library {
-    fn drop(&mut self) {
-        if ::std::thread::panicking() {
-            return;
-        }
-        commit_impl(self);
-    }
-}
 
 /// Starts a `Span` and also returns a `SpanGuard`.
 ///
